@@ -3,8 +3,10 @@ defmodule Avatarex do
   Documentation for `Avatarex`.
   """
 
+  alias Avatarex.Kitty
+
   @doc """
-  Hello world.
+  Generates a random kitty avatar
 
   ## Examples
 
@@ -12,7 +14,18 @@ defmodule Avatarex do
       :world
 
   """
-  def hello do
-    :world
+  def kitty(string) do
+    hash(string)
+    |> Kitty.generate()
+    |> IO.inspect()
+    |> Kitty.render()
+  end
+
+  def kitty() do
+    Kitty.random("random")
+  end
+
+  def hash(avatar_string) when is_binary(avatar_string) do
+    :crypto.hash(:sha512, avatar_string) 
   end
 end

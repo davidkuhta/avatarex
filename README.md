@@ -1,11 +1,18 @@
 # Avatarex
 
-**TODO: Add description**
+`Avatarex` is an elixir package for generating unique, reproducible Avatars.
+The package is inspired by [Robohash](https://github.com/e1ven/Robohash)
+
+Current Avatar sets include Birdy and Kitty created using images created
+by David Revoy and used under CC-BY-4.0.
+
+Images are generated using the [Image](https://github.com/elixir-image/image) elixir package.
+
+Note: The package is currently under development.
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `avatarex` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `avatarex` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -15,7 +22,10 @@ def deps do
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/avatarex>.
+Docs can be found at <https://hexdocs.pm/avatarex>.
 
+## License
+
+Avatarex source code is released under Apache License 2.0.
+
+Check [LICENSE](LICENSE) files for more information.

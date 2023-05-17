@@ -4,7 +4,7 @@ defmodule Avatarex.MixProject do
   def project do
     [
       app: :avatarex,
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 1.14",
       build_embedded: Mix.env == :prod,
       start_permanent: Mix.env() == :prod,
@@ -17,7 +17,7 @@ defmodule Avatarex.MixProject do
       docs: [
         main: "Avatarex", # The main page in the docs
         # logo: "path/to/logo.png",
-        extras: ["README.md"]
+        extras: ["README.md", "LICENSE"]
       ]
     ]
   end

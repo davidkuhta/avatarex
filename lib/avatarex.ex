@@ -5,6 +5,7 @@ defmodule Avatarex do
   Two Avatar sets are provided `Avatarex.Birdy` and `Avatarex.Kitty`
 
   """
+  @moduledoc since: "0.1.0"
 
   alias Avatarex.{Birdy, Kitty}
 

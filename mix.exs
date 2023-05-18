@@ -6,7 +6,7 @@ defmodule Avatarex.MixProject do
       app: :avatarex,
       version: "0.1.1",
       elixir: "~> 1.14",
-      build_embedded: Mix.env == :prod,
+      build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       description: description(),
       package: package(),
@@ -15,7 +15,8 @@ defmodule Avatarex.MixProject do
       source_url: "https://github.com/davidkuhta/avatarex",
       # homepage_url: "http://YOUR_PROJECT_HOMEPAGE",
       docs: [
-        main: "Avatarex", # The main page in the docs
+        # The main page in the docs
+        main: "Avatarex",
         # logo: "path/to/logo.png",
         extras: ["README.md", "LICENSE"]
       ]
@@ -31,11 +32,11 @@ defmodule Avatarex.MixProject do
   defp deps do
     [
       {:ex_doc, "~> 0.16", only: :dev, runtime: false},
-      {:image, "~> 0.31.1"},
+      {:image, "~> 0.31.1"}
     ]
   end
 
-    defp description() do
+  defp description() do
     "`Avatarex` is an elixir package for generating unique, reproducible Avatars"
   end
 

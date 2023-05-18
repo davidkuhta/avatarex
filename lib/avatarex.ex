@@ -1,102 +1,125 @@
 defmodule Avatarex do
-  @moduledoc """
-  `Avatarex` is inspired by Robohash: https://github.com/e1ven/Robohash
+  defmacro __before_compile__(_env) do
+    quote unquote: false do
+      for {name, module} <- @sets do
+        def generate(query, unquote(name)) do
+          Avatarex.generate(query, unquote(module), unquote(name), @renders_path)
+        end
+      end
 
-  Two Avatar sets are provided `Avatarex.Birdy` and `Avatarex.Kitty`
+      for {name, module} <- @sets do
+        def random(unquote(name)) do
+          Avatarex.random(unquote(module), unquote(name), @renders_path)
+        end
+      end
 
-  """
-  @moduledoc since: "0.1.0"
+      for {name, module} <- @sets do
+        def render(unquote(name)) do
+          Avatarex.render(unquote(module), unquote(name), @renders_path)
+        end
+      end
 
-  alias Avatarex.{Birdy, Kitty}
+      for {name, module} <- @sets do
+        def render(query, unquote(name)) do
+          Avatarex.render(query, unquote(module), unquote(name), @renders_path)
+        end
+      end
 
-  @doc """
-  Generates an avatar for a given name and Avatar type.
-  Defaults to :kitty
+      def random do
+        {name, module} = Enum.random(@sets)
+        Avatarex.random(module, name, @renders_path)
+      end
 
-  ## Examples
+      def render(set) do
+        Avatarex.render(set)
+      end
 
-      iex> Avatarex.generate("oscar", :birdy)
-      %Avatarex.Birdy{name: oscar}
-
-  """
-  def generate(name, set \\ :kitty) when set in [:kitty, :birdy] and is_binary(name) do
-    case set do
-      :birdy -> birdy(name)
-      :kitty -> kitty(name)
+      def write(set) do
+        Avatarex.write(set)
+      end
     end
   end
 
-  @doc """
-  Generates an `AvatarexKitty` avatar constructed
-  using the hash of the given name.
-
-  ## Examples
-
-      iex> Avatarex.kitty(name)
-      %Avatarex.Kitty{name: name, ...}
-
-  """
-  def kitty(string) do
-    kitty = string
-    |> Kitty.generate()
-    Kitty.render(kitty)
-    kitty
+  defmacro __using__(opts) do
+    quote bind_quoted: [opts: opts] do
+      @before_compile Avatarex
+      @renders_path opts[:renders_path] || raise("missing required option `:renders_path`")
+      Module.register_attribute(__MODULE__, :sets, accumulate: true)
+      import Avatarex, only: [set: 2]
+    end
   end
 
-  @doc """
-  Generates a random kitty avatar
-
-  ## Examples
-
-      iex> Avatarex.kitty()
-      %Avatarex.Kitty{}
-
-  """
-  def kitty() do
-    Kitty.random()
+  defmacro set(name, module) do
+    quote bind_quoted: [module: module, name: name] do
+      @sets {name, module}
+    end
   end
 
-  @doc """
-  Generates an `AvatarexKitty` avatar constructed
-  using the hash of the given name.
+  defstruct [:image, :name, :query, :renders_path, images: []]
 
-  ## Examples
+  def generate(query, module, name, renders_path)
+      when is_atom(module) and is_binary(query) and is_atom(name) and is_binary(renders_path) do
+    hash = :crypto.hash(:sha512, query)
+    keys = module.get_keys()
+    hash_parts = div(128, Enum.count(keys) + 1)
+    block_size = div(512, hash_parts)
 
-      iex> Avatarex.birdy(name)
-      %Avatarex.Birdy{name: name, ...}
-
-  """
-  def birdy(string) do
-    birdy = string
-    |> Birdy.generate()
-    Birdy.render(birdy)
-    birdy
+    keys
+    |> Enum.zip(for <<block::size(block_size) <- hash>>, do: block)
+    |> Enum.map(fn {key, value} ->
+      index = rem(value, module.get_image_count(key))
+      {key, module.get_image_path_by_index(key, index)}
+    end)
+    |> construct(name, query, renders_path)
   end
 
-  @doc """
-  Generates a random birdy avatar
-
-  ## Examples
-
-      iex> Avatarex.birdy()
-      %Avatarex.Birdy{}
-
-  """
-  def birdy() do
-    Birdy.random()
+  def random(module, name, renders_path)
+      when is_atom(module) and is_atom(name) and is_binary(renders_path) do
+    module.get_keys()
+    |> Enum.reduce([], fn key, acc ->
+      module.get_images_paths(key)
+      |> Enum.random()
+      |> then(&[{key, &1} | acc])
+    end)
+    |> construct(name, :rand.uniform(24), renders_path)
   end
 
-  @doc """
-  Generates a hash for a given string using sha512 from 
-  Erlang's crypto module.
+  defp construct(images, name, query, renders_path) do
+    %__MODULE__{images: images, name: name, query: query, renders_path: renders_path}
+  end
 
-  ## Examples
+  def render(%__MODULE__{images: images} = set) do
+    images
+    |> Keyword.values()
+    |> Enum.reduce(nil, fn
+      image, nil -> Image.open!(image)
+      image, composite -> Image.compose!(composite, Image.open!(image))
+    end)
+    |> then(&%__MODULE__{set | image: &1})
+  end
 
-      iex> Avatarex.hash("avatar_name")
-      <<130, 249, 176, 138, 182, 111, 225, 152, 83, 237, ... >>
+  def render(module, name, renders_path)
+      when is_atom(module) and is_atom(name) and is_binary(renders_path) do
+    module |> random(name, renders_path) |> render()
+  end
 
-  """
-  def hash(avatar_string) when is_binary(avatar_string) do
-    :crypto.hash(:sha512, avatar_string) 
+  def render(query, module, name, renders_path)
+      when is_atom(module) and is_atom(name) and is_binary(query) and is_binary(renders_path) do
+    query |> generate(module, name, renders_path) |> render()
+  end
+
+  def write(%__MODULE__{image: nil} = set) do
+    set |> render() |> write()
+  end
+
+  def write(%__MODULE__{image: image, name: name, query: query, renders_path: renders_path} = set) do
+    renders_path
+    |> Path.join("#{query}-#{name}.png")
+    |> then(&Image.write!(image, &1))
+    |> then(&%{set | image: &1})
+  end
+
+  def set_dir(name) do
+    :avatarex |> :code.priv_dir() |> then(&[&1, "sets", name]) |> Path.join()
   end
 end

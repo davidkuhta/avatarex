@@ -7,5 +7,5 @@ defmodule Avatarex.Sets.Kitty do
   """
   @moduledoc since: "0.1.0"
 
-  use Avatarex.Set, layer_order: ~w[body eye fur mouth accessory]
+  use Avatarex.Set, path: "kitty", layer_order: ~w[body eye fur mouth accessory]
 end

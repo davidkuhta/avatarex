@@ -1,8 +1,16 @@
 defmodule Avatarex do
   @moduledoc """
-  `Avatarex` is inspired by Robohash: https://github.com/e1ven/Robohash
+  Avatarex is is an elixir package for generating unique, reproducible avatars.
 
-  Two Avatar sets are provided `Avatarex.Sets.Birdy` and `Avatarex.Sets.Kitty`
+  The package is inspired by [Robohash](https://github.com/e1ven/Robohash)
+
+  Two Avatar sets are natively `Avatarex.Sets.Birdy` and `Avatarex.Sets.Kitty`, but
+  additional sets can be created using `Avatarex.Set`.
+
+  Optional parameter:
+  
+    renders_path: The absolute path to the directory in which to render images.
+    Will default to "avatarex/priv/renders" if unset or path doesn't exist.
 
   ## Example Usage
       defmodule MyApp.Avatar do
@@ -19,6 +27,8 @@ defmodule Avatarex do
 
   require Logger
 
+  @spec __before_compile__(any) :: Macro.t
+  # credo:disable-for-next-line
   defmacro __before_compile__(_env) do
     quote unquote: false do
 
@@ -36,6 +46,7 @@ defmodule Avatarex do
           %#{__MODULE__}{image: nil, name: "bob", set: kitty, renders_path: ...}
 
       """
+      @spec generate(set :: String.t, module :: atom) :: Avatarex.t_nil_image
       for {set, module} <- @sets do
         def generate(name, unquote(set)) do
           Avatarex.generate(name, unquote(module), unquote(set), @renders_path)
@@ -54,6 +65,7 @@ defmodule Avatarex do
           %#{__MODULE__}{image: nil, name: nil, set: birdy, renders_path: ...}
 
       """
+      @spec random() :: Avatarex.t_nil_image
       def random do
         {set, module} = Enum.random(@sets)
         Avatarex.random(module, set, @renders_path)
@@ -70,6 +82,7 @@ defmodule Avatarex do
           %#{__MODULE__}{image: nil, name: nil, set: kitty, renders_path: ...}
 
       """
+      @spec random(set :: atom) :: Avatarex.t_nil_image
       for {set, module} <- @sets do
         def random(unquote(set)) do
           Avatarex.random(unquote(module), unquote(set), @renders_path)
@@ -88,6 +101,7 @@ defmodule Avatarex do
           %#{__MODULE__}{image: %Vix.Vips.Image{}, name: 5, set: :kitty...}
 
       """
+      @spec render(set :: atom) :: Avatarex.t
       for {set, module} <- @sets do
         def render(unquote(set)) do
           Avatarex.render(unquote(module), unquote(set), @renders_path)
@@ -105,6 +119,7 @@ defmodule Avatarex do
           %#{__MODULE__}{image: %Vix.Vips.Image{}, ...}
 
       """
+      @spec render(avatar :: Avatarex.t) :: Avatarex.t
       def render(avatar) do
         Avatarex.render(avatar)
       end
@@ -121,6 +136,7 @@ defmodule Avatarex do
           %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
       """
+      @spec render(name :: String.t, set :: atom) :: Avatarex.t
       for {set, module} <- @sets do
         def render(name, unquote(set)) do
           Avatarex.render(name, unquote(module), unquote(set), @renders_path)
@@ -138,19 +154,27 @@ defmodule Avatarex do
           %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
       """
+      @spec write(avatar :: Avatarex.t) :: Avatarex.t
       def write(avatar) do
         Avatarex.write(avatar)
       end
     end
   end
 
+
+  @spec __using__([opts: String.t]) :: Macro.t
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
       @before_compile Avatarex
-      # @renders_path opts[:renders_path] || raise("missing required option `:renders_path`")
-      @renders_path opts[:renders_path] || :avatarex |> :code.priv_dir() |> Path.join("renders")
+      # @renders_path opts[:renders_path] || :avatarex |> :code.priv_dir() |> Path.join("renders")
 
-      if !File.exists?(@renders_path), do: File.mkdir_p(@renders_path)
+      default_path = :avatarex |> :code.priv_dir() |> Path.join("renders")
+      @renders_path (case opts[:renders_path] do
+        nil -> default_path
+        path -> if File.exists?(path), do: path, else: default_path
+      end)
+
+      unless File.exists?(@renders_path), do: File.mkdir_p(@renders_path)
 
       Module.register_attribute(__MODULE__, :sets, accumulate: true)
       import Avatarex, only: [set: 2]
@@ -167,6 +191,7 @@ defmodule Avatarex do
       set {:kitty, Avatarex.Sets.Kitty}
 
   """
+  @spec set(atom, atom) :: Macro.t
   defmacro set(set, module) do
     quote bind_quoted: [module: module, set: set] do
       @sets {set, module}
@@ -174,6 +199,12 @@ defmodule Avatarex do
   end
 
   defstruct [:image, :name, :set, :renders_path, images: []]
+  # @type t(first, last) :: %__MODULE__{first: first, last: last}
+
+  @type t :: %__MODULE__{image: Vix.Vips.Image.t, name: String.t | pos_integer(), 
+                         set: atom, renders_path: String.t, images: [{String.t, String.t}]}
+  @type t_nil_image :: %__MODULE__{image: nil, name: String.t | pos_integer(), set: atom, 
+                              renders_path: String.t, images: [{String.t, String.t}]}
 
   @doc """
   Writes a #{__MODULE__} to render path.
@@ -186,6 +217,7 @@ defmodule Avatarex do
       %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
   """
+  @spec generate(name :: String.t, module :: atom, set :: atom, renders_path :: String.t) :: Avatarex.t_nil_image
   def generate(name, module, set, renders_path)
       when is_atom(module) and is_binary(name) and is_atom(set) and is_binary(renders_path) do
     hash = :crypto.hash(:sha512, name)
@@ -213,6 +245,7 @@ defmodule Avatarex do
       %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
   """
+  @spec random(module :: atom, set :: atom, renders_path :: String.t) :: Avatarex.t_nil_image
   def random(module, set, renders_path)
       when is_atom(module) and is_atom(set) and is_binary(renders_path) do
     module.get_keys()
@@ -224,9 +257,10 @@ defmodule Avatarex do
     |> construct(set, :rand.uniform(24), renders_path)
   end
 
+  @spec construct(images :: [{}], set :: atom, name :: String.t | pos_integer, renders_path :: String.t) :: Avatarex.t_nil_image
   defp construct(images, set, name, renders_path) do
     %__MODULE__{images: images, set: set, name: name, renders_path: renders_path}
-    |> log(:construct)
+    |> log(:generate)
   end
 
   @doc """
@@ -240,6 +274,7 @@ defmodule Avatarex do
       %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
   """
+  @spec render(avatar :: Avatarex.t | Avatarex.t_nil_image) :: Avatarex.t
   def render(%__MODULE__{images: images} = avatar) do
     images
     |> Keyword.values()
@@ -252,7 +287,7 @@ defmodule Avatarex do
   end
 
   @doc """
-  Generates an unreproduble random #{__MODULE__} for a set and render path
+  Generates an unreproducible random #{__MODULE__} for a set and render path
   and renders the composite image.
 
   Returns `%#{__MODULE__}{image: ...}`.
@@ -263,13 +298,14 @@ defmodule Avatarex do
       %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
   """
+  @spec render(module :: atom, set :: atom, renders_path :: String.t) :: Avatarex.t
   def render(module, set, renders_path)
       when is_atom(module) and is_atom(set) and is_binary(renders_path) do
     module |> random(set, renders_path) |> render()
   end
 
   @doc """
-  Generates a reproduble random #{__MODULE__} for a given name and set and 
+  Generates a reproducible random #{__MODULE__} for a given name and set and 
   renders the composite image.
 
   Returns `%#{__MODULE__}{image: ...}`.
@@ -281,6 +317,7 @@ defmodule Avatarex do
       %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
   """
+  @spec render(name :: String.t, module :: atom, set :: atom, renders_path :: String.t) :: Avatarex.t
   def render(name, module, set, renders_path)
       when is_atom(module) and is_atom(set) and is_binary(name) and is_binary(renders_path) do
     name |> generate(module, set, renders_path) |> render()
@@ -298,10 +335,12 @@ defmodule Avatarex do
       %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
   """
+  @spec write(avatar :: Avatarex.t_nil_image) :: Avatarex.t
   def write(%__MODULE__{image: nil} = avatar) do
     avatar |> render() |> write()
   end
 
+  @spec write(avatar :: Avatarex.t) :: Avatarex.t
   def write(%__MODULE__{image: image, set: set, name: name, renders_path: renders_path} = avatar) do
     renders_path
     |> Path.join("#{name}_#{set}.png")
@@ -325,10 +364,12 @@ defmodule Avatarex do
       iex> ".../my_app/priv/sets/robot")
 
   """
+  @spec set_dir(set :: String.t) :: set_dir :: String.t
   def set_dir(set) when is_binary(set) do
     :avatarex |> :code.priv_dir() |> then(&[&1, "sets", set]) |> Path.join()
   end
 
+  @spec set_dir(module :: atom) :: set_dir :: String.t
   def set_dir(module) when is_atom(module) do
     module
     |> to_string()
@@ -338,9 +379,10 @@ defmodule Avatarex do
     |> set_dir()
   end
 
+  @spec log(avatar :: Avatarex.t | Avatarex.t_nil_image, action :: atom) :: Avatarex.t | Avatarex.t_nil_image
   defp log(avatar, action) do
     case action do
-      :construct -> "Constructing a #{avatar.set} avatar"
+      :generate -> "Generate a #{avatar.set} avatar"
       :render -> "Rendering #{avatar.set} avatar named #{avatar.name}"
       :write -> "Writing image '#{avatar.name}_#{avatar.set}.png' to renders path"
     end

@@ -5,7 +5,6 @@ defmodule Avatarex.Sets.Kitty do
 
   https://www.davidrevoy.com/article591/cat-bird-fenestar-abstract-avatar-generators
   """
-  @moduledoc since: "0.1.0"
-
-  use Avatarex.Set, path: "kitty", layer_order: ~w[body eye fur mouth accessorie]
+  
+  use Avatarex.Set, layer_order: ~w[body eye fur mouth accessorie]
 end

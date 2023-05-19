@@ -29,3 +29,5 @@ avatarex-*.tar
 
 /priv/renders/*
 /priv/sets/set*
+
+*.iex.exs

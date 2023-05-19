@@ -1,10 +1,12 @@
 defmodule Avatarex.MixProject do
   use Mix.Project
 
+  @version "0.2.0"
+
   def project do
     [
       app: :avatarex,
-      version: "0.1.1",
+      version: @version,
       elixir: "~> 1.14",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -61,15 +63,12 @@ defmodule Avatarex.MixProject do
   def links do
     %{
       "GitHub" => "https://github.com/davidkuhta/avatarex",
-      "Readme" => "https://github.com/davidkuhta/avatarex/blob/main/README.md",
-      "image" => "https://github.com/elixir-image/image",
+      "Readme" => "https://github.com/davidkuhta/avatarex/blob/v#{@version}/README.md",
       "Vix" => "https://github.com/akash-akya/vix",
       "libvips" => "https://www.libvips.org"
     }
   end
 
-  defp elixirc_paths(:test), do: ["lib","example", "test"]
-  defp elixirc_paths(:dev), do: ["lib", "example"]
-  defp elixirc_paths(:release), do: ["lib"]
+  defp elixirc_paths(:test), do: ["lib","test/support"]
   defp elixirc_paths(_), do: ["lib"]
 end

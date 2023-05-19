@@ -5,7 +5,6 @@ defmodule Avatarex.Sets.Birdy do
 
   https://www.davidrevoy.com/article591/cat-bird-fenestar-abstract-avatar-generators
   """
-  @moduledoc since: "0.1.0"
 
   use Avatarex.Set, layer_order: ~w[body hoop tail wing eyes bec accessorie]
 end

@@ -61,7 +61,7 @@ defmodule Avatarex.MixProject do
   def links do
     %{
       "GitHub" => "https://github.com/davidkuhta/avatarex",
-      "Readme" => "https://github.com/davidkuhta/avatarex/blob/v#{@version}/README.md",
+      "Readme" => "https://github.com/davidkuhta/avatarex/blob/main/README.md",
       "image" => "https://github.com/elixir-image/image",
       "Vix" => "https://github.com/akash-akya/vix",
       "libvips" => "https://www.libvips.org"

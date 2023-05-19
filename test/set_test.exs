@@ -1,7 +1,7 @@
-defmodule AvatarexTest do
+defmodule AvatarexSetTest do
   use ExUnit.Case
   
-  doctest Avatarex
+  doctest Avatarex.Set
 
   # test "greets the world" do
   #   assert Avatarex.hello() == :world

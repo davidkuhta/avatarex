@@ -3,7 +3,7 @@ defmodule Avatarex.Set do
   This module provides functions for creating an `Avatarex.Set`
 
   Optional parameters:
-  
+
     path: The root path or path relative to 'priv/sets' in which to find the feature
     folders for the set. Will default to "avatarex/priv/sets/module" if parameter not provided.
 
@@ -78,7 +78,6 @@ defmodule Avatarex.Set do
         def get_images_paths(unquote(field)), do: unquote(images_paths)
       end
 
-
       @doc """
       Returns the path for a particular image of a given field in the set.
       """
@@ -93,7 +92,6 @@ defmodule Avatarex.Set do
           def get_image_path_by_index(unquote(field), unquote(index)), do: unquote(path)
         end
       end
-
     end
   end
 end

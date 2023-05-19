@@ -8,7 +8,7 @@ defmodule Avatarex do
   additional sets can be created using `Avatarex.Set`.
 
   Optional parameter:
-  
+
     renders_path: The absolute path to the directory in which to render images.
     Will default to "avatarex/priv/renders" if unset or path doesn't exist.
 
@@ -61,7 +61,7 @@ defmodule Avatarex do
 
       ## Examples
 
-          iex> #{__MODULE__}.random()
+          #{__MODULE__}.random()
           %#{__MODULE__}{image: nil, name: nil, set: birdy, renders_path: ...}
 
       """
@@ -78,7 +78,7 @@ defmodule Avatarex do
 
       ## Examples
 
-          iex> #{__MODULE__}.random(:kitty)
+          #{__MODULE__}.random(:kitty)
           %#{__MODULE__}{image: nil, name: nil, set: kitty, renders_path: ...}
 
       """
@@ -97,7 +97,7 @@ defmodule Avatarex do
 
       ## Examples
 
-          iex> #{__MODULE__}.generate(:kitty)
+          #{__MODULE__}.generate(:kitty)
           %#{__MODULE__}{image: %Vix.Vips.Image{}, name: 5, set: :kitty...}
 
       """
@@ -115,7 +115,7 @@ defmodule Avatarex do
 
       ## Examples
 
-          iex> #{__MODULE__}.render(%#{__MODULE__}{})
+          #{__MODULE__}.render(%#{__MODULE__}{})
           %#{__MODULE__}{image: %Vix.Vips.Image{}, ...}
 
       """
@@ -132,7 +132,7 @@ defmodule Avatarex do
 
       ## Examples
 
-          iex> #{__MODULE__}.write("user_name, :kitty)
+          #{__MODULE__}.write("user_name, :kitty)
           %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
       """
@@ -166,7 +166,6 @@ defmodule Avatarex do
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
       @before_compile Avatarex
-      # @renders_path opts[:renders_path] || :avatarex |> :code.priv_dir() |> Path.join("renders")
 
       default_path = :avatarex |> :code.priv_dir() |> Path.join("renders")
       @renders_path (case opts[:renders_path] do
@@ -213,8 +212,17 @@ defmodule Avatarex do
 
   ## Examples
 
-      iex> #{__MODULE__}.generate(%#{__MODULE__}{})
-      %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
+      iex> alias #{__MODULE__}.Sets.Kitty
+      iex> default_path = :avatarex |> :code.priv_dir() |> Path.join("renders")
+      iex> #{__MODULE__}.generate("david", Kitty, :kitty, default_path)
+      %#{__MODULE__}{image: nil, name: "david", set: :kitty, renders_path: default_path,
+                    images: [
+                      {"body", Path.join(Kitty.get_path(), "/body/body_7.png")},
+                      {"eye", Path.join(Kitty.get_path(), "/eye/eye_7.png")},
+                      {"fur", Path.join(Kitty.get_path(), "/fur/fur_1.png")},
+                      {"mouth", Path.join(Kitty.get_path(), "/mouth/mouth_6.png")},
+                      {"accessorie", Path.join(Kitty.get_path(), "/accessorie/accessorie_20.png")}
+                    ]}
 
   """
   @spec generate(name :: String.t, module :: atom, set :: atom, renders_path :: String.t) :: Avatarex.t_nil_image
@@ -240,8 +248,8 @@ defmodule Avatarex do
   Returns `%#{__MODULE__}{image: %Vix.Vips.Image{}, name: ...}`.
 
   ## Examples
-      iex> alias Avatarex.Sets.Kitty
-      iex> #{__MODULE__}.random(Kitty, :kitty, "priv/render")
+      alias Avatarex.Sets.Kitty
+      #{__MODULE__}.random(Kitty, :kitty, "priv/render")
       %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
   """
@@ -269,8 +277,8 @@ defmodule Avatarex do
   Returns `%#{__MODULE__}{image: ...}`.
 
   ## Examples
-
-      iex> #{__MODULE__}.render(%#{__MODULE__}{images: images})
+      
+      #{__MODULE__}.render(%#{__MODULE__}{images: _})
       %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
   """
@@ -294,7 +302,7 @@ defmodule Avatarex do
 
   ## Examples
 
-      iex> #{__MODULE__}.render(%#{__MODULE__}{images: images})
+      #{__MODULE__}.render(%#{__MODULE__}{images: _})
       %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
   """
@@ -312,8 +320,7 @@ defmodule Avatarex do
 
   ## Examples
 
-      iex> alias Avatarex.Sets.Kitty
-      iex> #{__MODULE__}.render("user_name", Kitty, :kitty, "/renders/...")
+      #{__MODULE__}.render("user_name", Avatarex.Sets.Kitty, :kitty, "/renders/...")
       %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
   """
@@ -330,8 +337,7 @@ defmodule Avatarex do
 
   ## Examples
 
-      iex> alias Avatarex.Sets.Kitty
-      iex> #{__MODULE__}.render("user_name", Kitty, :kitty, "/renders/...")
+      #{__MODULE__}.render("user_name", Avatarex.Sets.Kitty, :kitty, "/renders/...")
       %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
   """
@@ -356,12 +362,12 @@ defmodule Avatarex do
 
   ## Examples
 
-      iex> set_dir("kitty")
-      iex> ".../my_app/priv/sets/kitty")
+      set_dir("kitty")
+      "../my_app/priv/sets/kitty")
 
-      iex> alias MyApp.Avatar.Set.Robot
-      iex> set_dir(Robot)
-      iex> ".../my_app/priv/sets/robot")
+      alias MyApp.Avatar.Set.Robot
+      set_dir(Robot)
+      ".../my_app/priv/sets/robot")
 
   """
   @spec set_dir(set :: String.t) :: set_dir :: String.t

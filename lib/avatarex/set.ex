@@ -29,6 +29,8 @@ defmodule Avatarex.Set do
       end
 
   """
+  alias __MODULE__
+
   @typedoc "A path to an avatarex set"
   @type path :: String.t
 
@@ -42,29 +44,29 @@ defmodule Avatarex.Set do
   @type image_path :: String.t
 
   @doc """
-  Returns keys for the set.
+  Returns layers for the set.
   """
-  @callback get_layers() :: keys :: [Avatarex.Set.layer]
+  @callback get_layers() :: layers :: [Set.layer]
 
   @doc """
   Returns the path to the set.
   """
-  @callback get_path() :: Avatarex.Set.path
+  @callback get_path() :: Set.path
 
   @doc """
   Returns the count of images for a given layer in the set.
   """
-  @callback get_image_count(Avatarex.Set.layer) :: image_count :: integer
+  @callback get_image_count(Set.layer) :: image_count :: integer
 
   @doc """
   Returns the path of images for a given layer in the set.
   """
-  @callback get_images_paths(Avatarex.Set.layer) :: layer_images_path :: [Avatarex.Set.image_path]
+  @callback get_images_paths(Set.layer) :: layer_images_path :: [Set.image_path]
 
   @doc """
   Returns the path for a particular image of a given layer in the set.
   """
-  @callback get_image_path_by_index(Avatarex.Set.layer, index :: integer) :: layer_image_path_for_index :: Avatarex.Set.image_path
+  @callback get_image_path_by_index(Set.layer, index :: integer) :: layer_image_path_for_index :: Set.image_path
 
 
   @spec __using__([opts: String.t]) :: Macro.t
@@ -73,25 +75,22 @@ defmodule Avatarex.Set do
 
       @behaviour Avatarex.Set
 
-      @avatar_module opts[:avatar]
-
-      sets_dir = case @avatar_module do
+      @sets_path (case opts[:avatar] do
         nil -> :avatarex |> :code.priv_dir() |> Path.join("sets")
-        app -> @avatar_module.sets_dir()
-      end
+        app -> app.sets_path()
+      end)
 
       @path (case opts[:path] do
         nil -> 
           __MODULE__
-          |> to_string()
-          |> String.split(".")
-          |> List.last 
-          |> String.downcase()
-          |> then(&Path.join(sets_dir, &1))
+          |> Macro.underscore()
+          |> String.split("/")
+          |> List.last
+          |> then(&Path.join(@sets_path, &1))
         path -> if File.exists?(path) do
             path
           else
-            Path.join(sets_dir, path)
+            Path.join(@sets_path, path)
           end
       end)
       
@@ -100,51 +99,23 @@ defmodule Avatarex.Set do
         layers -> layers
       end)
 
-      @doc """
-      Returns layers for the set.
-      """
-      @spec get_layers() :: layers :: [Avatarex.Set.layer]
       def get_layers, do: @layers
 
-      @doc """
-      Returns the path to the set.
-      """
-      @spec get_path() :: Avatarex.Set.path
       def get_path, do: @path
 
-      @doc """
-      Returns the count of images for a given layer in the set.
-      """
-      @spec get_image_count(Avatarex.Set.layer) :: image_count :: integer
       for layer <- @layers,
-          count = @path |> Path.join(layer) |> File.ls!() |> Enum.count() do
-        def get_image_count(unquote(layer)), do: unquote(count)
-      end
+        layer_path = Path.join(@path, layer),
+        images = File.ls!(layer_path) |> Enum.sort(),
+        count = Enum.count(images),
+        images_paths = Enum.map(images, &Path.join(layer_path, &1)) do
 
-      @doc """
-      Returns the path of images for a given layer in the set.
-      """
-      @spec get_images_paths(Avatarex.Set.layer) :: layer_images_path :: [Avatarex.Set.image_path]
-      for layer <- @layers,
-          layer_path = Path.join(@path, layer),
-          images = File.ls!(layer_path),
-          images_paths = Enum.map(images, &Path.join(layer_path, &1)) do
-        def get_images_paths(unquote(layer)), do: unquote(images_paths)
-      end
+          def get_image_count(unquote(layer)), do: unquote(count)
+          def get_images_paths(unquote(layer)), do: unquote(images_paths)
 
-      @doc """
-      Returns the path for a particular image of a given layer in the set.
-      """
-      @spec get_image_path_by_index(Avatarex.Set.layer, index :: integer) :: layer_image_path_for_index :: Avatarex.Set.image_path
-      for layer <- @layers,
-          layer_path = Path.join(@path, layer),
-          images = File.ls!(layer_path) |> Enum.sort() do
-
-        for {image, index} <- images |> Enum.with_index(),
-            path = Path.join(layer_path, image) do
-
-          def get_image_path_by_index(unquote(layer), unquote(index)), do: unquote(path)
-        end
+          for {image, index} <- images |> Enum.with_index(),
+              path = Path.join(layer_path, image) do
+                def get_image_path_by_index(unquote(layer), unquote(index)), do: unquote(path)
+          end
       end
     end
   end

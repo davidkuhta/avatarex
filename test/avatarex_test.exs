@@ -67,7 +67,6 @@ defmodule AvatarexTest do
         files = File.ls!(renders_path)
         refute file_name in files
         count = Enum.count(files)
-
         Avatarex.write(rendered)
         files = File.ls!(renders_path)
         assert Enum.count(files) == count + 1

@@ -172,7 +172,7 @@ defmodule Avatarex do
       @before_compile Avatarex
 
       @app (case opts[:otp_app] do
-        nil -> :avatarex
+        nil -> Mix.Project.get().project()[:app]
         app -> app
       end)
 
@@ -181,29 +181,27 @@ defmodule Avatarex do
         path -> path
       end)
 
-      @sets_dir (if File.exists?(@sets_path) do
+      @sets_path (if File.exists?(@sets_path) do
           @sets_path
         else
           @app |> :code.priv_dir |> Path.join(@sets_path)
         end)
-
-      unless File.exists?(@sets_dir), do: File.mkdir_p(@sets_dir)
 
       @doc """
       Returns a full path to the default directory for this avatar's sets.
 
       ## Examples
 
-          sets_dir("kitty")
+          sets_path("kitty")
           "../my_app/priv/sets/")
 
           alias MyApp.Avatar.Set.Robot
-          sets_dir(Robot)
+          sets_path(Robot)
           ".../my_app/priv/sets/")
 
       """
-      @spec sets_dir() :: sets_dir :: String.t
-      def sets_dir(), do: @sets_dir
+      @spec sets_path() :: sets_path :: String.t
+      def sets_path(), do: @sets_path
 
       @renders_path (case opts[:renders_path] do
         nil -> "renders"
@@ -411,8 +409,9 @@ defmodule Avatarex do
 
   @spec write(avatar :: Avatarex.t_rendered) :: Avatarex.t_rendered
   def write(%__MODULE__{image: image, set: set, name: name, renders_path: renders_path} = avatar) do
-    "#{name}_#{set}.png"
-    |> String.replace(" ", "_")
+    "#{name}"
+    |> String.replace(~r/[^a-zA-Z0-9-]/, "_")
+    |> then(&"#{&1}_#{set}.png")
     |> then(&Path.join(renders_path, &1))
     |> then(&Image.write!(image, &1))
     |> then(&%{avatar | image: &1})

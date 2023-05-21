@@ -17,15 +17,19 @@ The package can be installed by adding `avatarex` to your list of dependencies i
 ```elixir
 def deps do
   [
-    {:avatarex, "~> 0.1.0"}
+    {:avatarex, "~> 0.2.0"}
   ]
 end
 ```
 
 Docs can be found at <https://hexdocs.pm/avatarex>.
 
+
 ## License
 
 Avatarex source code is released under Apache License 2.0.
 
 Check [LICENSE](LICENSE) files for more information.
+
+### Acknowledgements
+Many thanks to [Tomasz Sulima](https://github.com/Eiji7) for his rewrite proposal, code reviews, and design feedback.

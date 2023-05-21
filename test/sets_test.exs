@@ -1,4 +1,4 @@
-defmodule SetsTest do
+defmodule Avatarex.SetsTest do
   use ExUnit.Case
 
   alias Avatarex.Sets.{Birdy, Kitty}

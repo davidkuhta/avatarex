@@ -4,6 +4,7 @@ defmodule SetsTest do
   alias Avatarex.Sets.{Birdy, Kitty}
 
   doctest Birdy
+  doctest Kitty
 
 
   sets = [
@@ -15,8 +16,8 @@ defmodule SetsTest do
 
   for {name, %{set: set, layers: layers, counts: counts}} <- sets do
 
-    test "get #{name} keys" do
-      assert unquote(set).get_keys() == unquote(layers)
+    test "get #{name} layers" do
+      assert unquote(set).get_layers() == unquote(layers)
     end
 
     test "get #{name} path" do

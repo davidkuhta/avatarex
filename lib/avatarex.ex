@@ -188,7 +188,6 @@ defmodule Avatarex do
         end)
 
       unless File.exists?(@sets_dir), do: File.mkdir_p(@sets_dir)
-      IO.inspect(@sets_dir)
 
       @doc """
       Returns a full path to the default directory for this avatar's sets.
@@ -275,34 +274,27 @@ defmodule Avatarex do
   @typep log_action :: :generate | :render | :write
 
   @doc """
-  Writes a #{__MODULE__} to render path.
+  Generates a reproducible #{__MODULE__} for a given name, from the module and set specified
+  for a set and render path.
 
-  Returns `%#{__MODULE__}{image:  %Vix.Vips.Image{}, name: ...}`.
+  Returns `%#{__MODULE__}{image: ...}`.
 
   ## Examples
 
-      # iex> alias #{__MODULE__}.Sets.Kitty
-      # iex> default_path = :avatarex |> :code.priv_dir() |> Path.join("renders")
-      # iex> #{__MODULE__}.generate("david", Kitty, :kitty, default_path)
-      # %#{__MODULE__}{image: nil, name: "david", set: :kitty, renders_path: default_path,
-      #               images: [
-      #                 {"body", Path.join(Kitty.get_path(), "/body/body_7.png")},
-      #                 {"eye", Path.join(Kitty.get_path(), "/eye/eye_7.png")},
-      #                 {"fur", Path.join(Kitty.get_path(), "/fur/fur_1.png")},
-      #                 {"mouth", Path.join(Kitty.get_path(), "/mouth/mouth_6.png")},
-      #                 {"accessorie", Path.join(Kitty.get_path(), "/accessorie/accessorie_20.png")}
-      #               ]}
+      alias Avatarex.Sets.Kitty
+      #{__MODULE__}.generate("user_name", Kitty, :kitty, ".../priv/renders/...")
+      %#{__MODULE__}{image: nil, name: "user_name", set: :kitty...}
 
   """
   @spec generate(Avatarex.name, Avatarex.set_module, Avatarex.set, Avatarex.renders_path) :: Avatarex.t_unrendered
   def generate(name, module, set, renders_path)
       when is_atom(module) and is_binary(name) and is_atom(set) and is_binary(renders_path) do
     hash = :crypto.hash(:sha512, name)
-    keys = module.get_keys()
-    hash_parts = div(128, Enum.count(keys) + 1)
+    layers = module.get_layers()
+    hash_parts = div(128, Enum.count(layers)) # Future potential for + 1 based on background
     block_size = div(512, hash_parts)
 
-    keys
+    layers
     |> Enum.zip(for <<block::size(block_size) <- hash>>, do: block)
     |> Enum.map(fn {key, value} ->
       index = rem(value, module.get_image_count(key))
@@ -312,7 +304,7 @@ defmodule Avatarex do
   end
 
   @doc """
-  Generates a #{__MODULE__} to render path for a given #{__MODULE__}.Set
+  Generates a random #{__MODULE__} to render path for a given module, set, and render path.
 
   Returns `%#{__MODULE__}{image: %Vix.Vips.Image{}, name: ...}`.
 
@@ -325,7 +317,7 @@ defmodule Avatarex do
   @spec random(Avatarex.set_module, Avatarex.set, Avatarex.renders_path) :: Avatarex.t_unrendered
   def random(module, set, renders_path)
       when is_atom(module) and is_atom(set) and is_binary(renders_path) do
-    module.get_keys()
+    module.get_layers()
     |> Enum.reduce([], fn key, acc ->
       module.get_images_paths(key)
       |> Enum.random()
@@ -347,7 +339,7 @@ defmodule Avatarex do
 
   ## Examples
       
-      #{__MODULE__}.render(%#{__MODULE__}{images: _})
+      #{__MODULE__}.render(%#{__MODULE__}{images: []})
       %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
   """

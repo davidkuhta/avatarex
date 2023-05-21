@@ -44,7 +44,7 @@ defmodule Avatarex.Set do
   @doc """
   Returns keys for the set.
   """
-  @callback get_keys() :: keys :: [Avatarex.Set.layer]
+  @callback get_layers() :: keys :: [Avatarex.Set.layer]
 
   @doc """
   Returns the path to the set.
@@ -95,16 +95,16 @@ defmodule Avatarex.Set do
           end
       end)
       
-      @keys (case opts[:layer_order] do
+      @layers (case opts[:layer_order] do
         nil -> File.ls!(@path) |> Enum.sort()
-        keys -> keys
+        layers -> layers
       end)
 
       @doc """
-      Returns keys for the set.
+      Returns layers for the set.
       """
-      @spec get_keys() :: keys :: [Avatarex.Set.layer]
-      def get_keys, do: @keys
+      @spec get_layers() :: layers :: [Avatarex.Set.layer]
+      def get_layers, do: @layers
 
       @doc """
       Returns the path to the set.
@@ -116,7 +116,7 @@ defmodule Avatarex.Set do
       Returns the count of images for a given layer in the set.
       """
       @spec get_image_count(Avatarex.Set.layer) :: image_count :: integer
-      for layer <- @keys,
+      for layer <- @layers,
           count = @path |> Path.join(layer) |> File.ls!() |> Enum.count() do
         def get_image_count(unquote(layer)), do: unquote(count)
       end
@@ -125,7 +125,7 @@ defmodule Avatarex.Set do
       Returns the path of images for a given layer in the set.
       """
       @spec get_images_paths(Avatarex.Set.layer) :: layer_images_path :: [Avatarex.Set.image_path]
-      for layer <- @keys,
+      for layer <- @layers,
           layer_path = Path.join(@path, layer),
           images = File.ls!(layer_path),
           images_paths = Enum.map(images, &Path.join(layer_path, &1)) do
@@ -136,7 +136,7 @@ defmodule Avatarex.Set do
       Returns the path for a particular image of a given layer in the set.
       """
       @spec get_image_path_by_index(Avatarex.Set.layer, index :: integer) :: layer_image_path_for_index :: Avatarex.Set.image_path
-      for layer <- @keys,
+      for layer <- @layers,
           layer_path = Path.join(@path, layer),
           images = File.ls!(layer_path) |> Enum.sort() do
 

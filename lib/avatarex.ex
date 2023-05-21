@@ -1,102 +1,431 @@
 defmodule Avatarex do
   @moduledoc """
-  `Avatarex` is inspired by Robohash: https://github.com/e1ven/Robohash
+  Avatarex is is an elixir package for generating unique, reproducible avatars.
 
-  Two Avatar sets are provided `Avatarex.Birdy` and `Avatarex.Kitty`
+  The package is inspired by [Robohash](https://github.com/e1ven/Robohash)
 
+  Two Avatar sets are natively `Avatarex.Sets.Birdy` and `Avatarex.Sets.Kitty`, but
+  additional sets can be created using `Avatarex.Set`.
+
+  Optional parameters:
+
+    otp_app: The parent application to be used to generate the sets path.
+
+    sets_path: The fully qualified sets path or path relative to the otp application's priv directory.
+    Will default to "myapp/priv/sets" if unset.
+
+    renders_path: The absolute path to the directory in which to render images.
+    Will default to "myapp/priv/renders" if unset or path doesn't exist.
+
+  Logs avatar generation, rendering, and writing of rendered avatar.
+
+  ## Example Usage
+      defmodule MyApp.Avatar do
+        use Avatarex
+
+        alias Avatarex.Sets.{Birdy, Kitty}
+
+        for {name, module} <- [birdy: Birdy, kitty: Kitty] do
+          set name, module
+        end
+      end
   """
-  @moduledoc since: "0.1.0"
 
-  alias Avatarex.{Birdy, Kitty}
+  require Logger
 
-  @doc """
-  Generates an avatar for a given name and Avatar type.
-  Defaults to :kitty
+  @spec __before_compile__(env :: Macro.Env.t()) :: Macro.t
+  # credo:disable-for-next-line
+  defmacro __before_compile__(_env) do
+    quote unquote: false do
 
-  ## Examples
+      set_list = "#{inspect Keyword.keys(@sets)}"
 
-      iex> Avatarex.generate("oscar", :birdy)
-      %Avatarex.Birdy{name: oscar}
+      @doc """
+      Generates a reproducible #{__MODULE__} for a given name and set 
+      in #{set_list}.
 
-  """
-  def generate(name, set \\ :kitty) when set in [:kitty, :birdy] and is_binary(name) do
-    case set do
-      :birdy -> birdy(name)
-      :kitty -> kitty(name)
+      Returns `%#{__MODULE__}{image: nil, name: ...}`.
+
+      ## Examples
+
+          iex> #{__MODULE__}.generate("user_name", :kitty)
+          %#{__MODULE__}{image: nil, name: "bob", set: :kitty, renders_path: ...}
+
+      """
+      @spec generate(Avatarex.set, Avatarex.set_module) :: Avatarex.t_unrendered
+      for {set, module} <- @sets do
+        def generate(name, unquote(set)) do
+          Avatarex.generate(name, unquote(module), unquote(set), @renders_path)
+        end
+      end
+
+      @doc """
+      Generates an unreproducible random #{__MODULE__} from a set in #{set_list}.
+
+      Returns `%#{__MODULE__}{image: nil, name: ...}`.
+
+      ## Examples
+
+          #{__MODULE__}.random()
+          %#{__MODULE__}{image: nil, name: nil, set: :birdy, renders_path: ...}
+
+      """
+      @spec random() :: Avatarex.t_unrendered
+      def random do
+        {set, module} = Enum.random(@sets)
+        Avatarex.random(module, set, @renders_path)
+      end
+
+      @doc """
+      Generates an unreproducible random #{__MODULE__} for a given set in #{set_list}.
+
+      Returns `%#{__MODULE__}{image: nil, name: ...}`.
+
+      ## Examples
+
+          #{__MODULE__}.random(:kitty)
+          %#{__MODULE__}{image: nil, name: nil, set: :kitty, renders_path: ...}
+
+      """
+      @spec random(Avatarex.set) :: Avatarex.t_unrendered
+      for {set, module} <- @sets do
+        def random(unquote(set)) do
+          Avatarex.random(unquote(module), unquote(set), @renders_path)
+        end
+      end
+
+      @doc """
+      Generates a random #{__MODULE__} for a set in #{set_list}
+      and renders a composite image.
+
+      Returns `%#{__MODULE__}{image: %Vix.Vips.Image{}, set: ...}`.
+
+      ## Examples
+
+          #{__MODULE__}.generate(:kitty)
+          %#{__MODULE__}{image: %Vix.Vips.Image{}, name: 5, set: :kitty...}
+
+      """
+      @spec render(Avatarex.set) :: Avatarex.t
+      for {set, module} <- @sets do
+        def render(unquote(set)) do
+          Avatarex.render(unquote(module), unquote(set), @renders_path)
+        end
+      end
+
+      @doc """
+      Renders a #{__MODULE__} to form a composite image.
+
+      Returns `%#{__MODULE__}{image:  %Vix.Vips.Image{}, ...}`.
+
+      ## Examples
+
+          #{__MODULE__}.render(%#{__MODULE__}{})
+          %#{__MODULE__}{image: %Vix.Vips.Image{}, ...}
+
+      """
+      @spec render(Avatarex.t) :: Avatarex.t
+      def render(avatar) do
+        Avatarex.render(avatar)
+      end
+
+      @doc """
+      Generates a #{__MODULE__} for a given name and set in #{set_list}
+      and renders a composite image
+
+      Returns `%#{__MODULE__}{image:  %Vix.Vips.Image{}, name: ...}`.
+
+      ## Examples
+
+          #{__MODULE__}.write("user_name, :kitty)
+          %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
+
+      """
+      @spec render(Avatarex.name, Avatarex.set) :: Avatarex.t
+      for {set, module} <- @sets do
+        def render(name, unquote(set)) do
+          Avatarex.render(name, unquote(module), unquote(set), @renders_path)
+        end
+      end
+
+      @doc """
+      Writes a #{__MODULE__} to initialized renders path.
+
+      Returns `%#{__MODULE__}{image:  %Vix.Vips.Image{}, name: ...}`.
+
+      ## Examples
+
+          iex> #{__MODULE__}.write(%#{__MODULE__}{})
+          %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
+
+      """
+      @spec write(Avatarex.t) :: Avatarex.t
+      def write(avatar) do
+        Avatarex.write(avatar)
+      end
+    end
+  end
+
+  @spec __using__([opts: String.t]) :: Macro.t
+  defmacro __using__(opts) do
+    quote bind_quoted: [opts: opts] do
+      @before_compile Avatarex
+
+      @app (case opts[:otp_app] do
+        nil -> Mix.Project.get().project()[:app]
+        app -> app
+      end)
+
+      @sets_path (case opts[:sets_path] do
+        nil -> "sets"
+        path -> path
+      end)
+
+      @sets_path (if File.exists?(@sets_path) do
+          @sets_path
+        else
+          @app |> :code.priv_dir |> Path.join(@sets_path)
+        end)
+
+      @doc """
+      Returns a full path to the default directory for this avatar's sets.
+
+      ## Examples
+
+          sets_path("kitty")
+          "../my_app/priv/sets/")
+
+          alias MyApp.Avatar.Set.Robot
+          sets_path(Robot)
+          ".../my_app/priv/sets/")
+
+      """
+      @spec sets_path() :: sets_path :: String.t
+      def sets_path(), do: @sets_path
+
+      @renders_path (case opts[:renders_path] do
+        nil -> "renders"
+        path -> path
+      end)
+
+      @renders_path (if File.exists?(@renders_path) do
+        @renders_path
+      else
+        @app |> :code.priv_dir |> Path.join(@renders_path)
+      end)
+
+      unless File.exists?(@renders_path), do: File.mkdir_p(@renders_path)
+
+      Module.register_attribute(__MODULE__, :sets, accumulate: true)
+      import Avatarex, only: [set: 2]
+
     end
   end
 
   @doc """
-  Generates an `AvatarexKitty` avatar constructed
-  using the hash of the given name.
+  Macro that adds the provided {set, module} to the available #{__MODULE__} sets.
 
   ## Examples
 
-      iex> Avatarex.kitty(name)
-      %Avatarex.Kitty{name: name, ...}
+      use Avatarex, renders_path:...
+
+      set {:kitty, Avatarex.Sets.Kitty}
 
   """
-  def kitty(string) do
-    kitty = string
-    |> Kitty.generate()
-    Kitty.render(kitty)
-    kitty
+  @spec set(Avatarex.set, Avatarex.set_module) :: Macro.t
+  defmacro set(set, module) do
+    quote bind_quoted: [module: module, set: set] do
+      @sets {set, module}
+    end
+  end
+
+  defstruct [:image, :name, :set, :renders_path, images: []]
+
+  @typedoc "This type"
+  @type t(image) :: %__MODULE__{image: image, name: String.t | pos_integer(), 
+                         set: atom, renders_path: String.t, images: [{Avatarex.Set.layer, Avatarex.Set.image_path}]}
+  
+  @typedoc "An Avatarex type"
+  @type t :: t(Vix.Vips.Image.t | nil)
+
+  @typedoc "An unrendered Avatarex type"
+  @type t_unrendered :: t(nil)
+
+  @typedoc "A rendered Avatarex type"
+  @type t_rendered :: t(Vix.Vips.Image.t)
+
+  @typedoc "A render path"
+  @type renders_path :: String.t
+
+  @typedoc "A name used for avatar and subsequent rendered file name"
+  @type name :: String.t | pos_integer
+
+  @typedoc "An Avatarex set atom"
+  @type set :: atom
+
+  @typedoc "A module which conforms to Avatar Set behaviour"
+  @type set_module :: module
+
+  @typedoc "A list of Avatarex Set layer and Avatarex Set image _path tuples"
+  @type images :: [{Avatarex.Set.layer, Avatarex.Set.image_path}]
+
+  @typep log_action :: :generate | :render | :write
+
+  @doc """
+  Generates a reproducible #{__MODULE__} for a given name, from the module and set specified
+  for a set and render path.
+
+  Returns `%#{__MODULE__}{image: ...}`.
+
+  ## Examples
+
+      alias Avatarex.Sets.Kitty
+      #{__MODULE__}.generate("user_name", Kitty, :kitty, ".../priv/renders/...")
+      %#{__MODULE__}{image: nil, name: "user_name", set: :kitty...}
+
+  """
+  @spec generate(Avatarex.name, Avatarex.set_module, Avatarex.set, Avatarex.renders_path) :: Avatarex.t_unrendered
+  def generate(name, module, set, renders_path)
+      when is_atom(module) and is_binary(name) and is_atom(set) and is_binary(renders_path) do
+    hash = :crypto.hash(:sha512, name)
+    layers = module.get_layers()
+    hash_parts = div(128, Enum.count(layers)) # Future potential for + 1 based on background
+    block_size = div(512, hash_parts)
+
+    layers
+    |> Enum.zip(for <<block::size(block_size) <- hash>>, do: block)
+    |> Enum.map(fn {key, value} ->
+      index = rem(value, module.get_image_count(key))
+      {key, module.get_image_path_by_index(key, index)}
+    end)
+    |> construct(set, name, renders_path)
   end
 
   @doc """
-  Generates a random kitty avatar
+  Generates a random #{__MODULE__} to render path for a given module, set, and render path.
+
+  Returns `%#{__MODULE__}{image: %Vix.Vips.Image{}, name: ...}`.
 
   ## Examples
-
-      iex> Avatarex.kitty()
-      %Avatarex.Kitty{}
+      alias Avatarex.Sets.Kitty
+      #{__MODULE__}.random(Kitty, :kitty, "priv/render")
+      %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
   """
-  def kitty() do
-    Kitty.random()
+  @spec random(Avatarex.set_module, Avatarex.set, Avatarex.renders_path) :: Avatarex.t_unrendered
+  def random(module, set, renders_path)
+      when is_atom(module) and is_atom(set) and is_binary(renders_path) do
+    module.get_layers()
+    |> Enum.reduce([], fn key, acc ->
+      module.get_images_paths(key)
+      |> Enum.random()
+      |> then(&[{key, &1} | acc])
+    end)
+    |> construct(set, :rand.uniform(24), renders_path)
+  end
+
+  @spec construct(Avatarex.images, Avatarex.set, Avatarex.name, Avatarex.renders_path) :: Avatarex.t_unrendered
+  defp construct(images, set, name, renders_path) do
+    %__MODULE__{images: images, set: set, name: name, renders_path: renders_path}
+    |> log(:generate)
   end
 
   @doc """
-  Generates an `AvatarexKitty` avatar constructed
-  using the hash of the given name.
+  Renders a #{__MODULE__} with a composite image.
+
+  Returns `%#{__MODULE__}{image: ...}`.
 
   ## Examples
-
-      iex> Avatarex.birdy(name)
-      %Avatarex.Birdy{name: name, ...}
+      
+      #{__MODULE__}.render(%#{__MODULE__}{images: []})
+      %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
   """
-  def birdy(string) do
-    birdy = string
-    |> Birdy.generate()
-    Birdy.render(birdy)
-    birdy
+  @spec render(Avatarex.t) :: Avatarex.t_rendered
+  def render(%__MODULE__{images: images} = avatar) do
+    images
+    |> Keyword.values()
+    |> Enum.reduce(nil, fn
+      image, nil -> Image.open!(image)
+      image, composite -> Image.compose!(composite, Image.open!(image))
+    end)
+    |> then(&%__MODULE__{avatar | image: &1})
+    |> log(:render)
   end
 
   @doc """
-  Generates a random birdy avatar
+  Generates an unreproducible random #{__MODULE__} for a set and render path
+  and renders the composite image.
+
+  Returns `%#{__MODULE__}{image: ...}`.
 
   ## Examples
 
-      iex> Avatarex.birdy()
-      %Avatarex.Birdy{}
+      #{__MODULE__}.render(%#{__MODULE__}{images: _})
+      %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
   """
-  def birdy() do
-    Birdy.random()
+  @spec render(Avatarex.set_module, Avatarex.set, Avatarex.renders_path) :: Avatarex.t_rendered
+  def render(module, set, renders_path)
+      when is_atom(module) and is_atom(set) and is_binary(renders_path) do
+    module |> random(set, renders_path) |> render()
   end
 
   @doc """
-  Generates a hash for a given string using sha512 from 
-  Erlang's crypto module.
+  Generates a reproducible random #{__MODULE__} for a given name and set and 
+  renders the composite image.
+
+  Returns `%#{__MODULE__}{image: ...}`.
 
   ## Examples
 
-      iex> Avatarex.hash("avatar_name")
-      <<130, 249, 176, 138, 182, 111, 225, 152, 83, 237, ... >>
+      #{__MODULE__}.render("user_name", Avatarex.Sets.Kitty, :kitty, "/renders/...")
+      %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
 
   """
-  def hash(avatar_string) when is_binary(avatar_string) do
-    :crypto.hash(:sha512, avatar_string) 
+  @spec render(Avatarex.name, Avatarex.set_module, Avatarex.set, Avatarex.renders_path) :: Avatarex.t_rendered
+  def render(name, module, set, renders_path)
+      when is_atom(module) and is_atom(set) and is_binary(name) and is_binary(renders_path) do
+    name |> generate(module, set, renders_path) |> render()
+  end
+
+  @doc """
+  Renders a #{__MODULE__} composite image and writes the image at the designated
+  renders path with the form "{name}_{set}.png". Spaces in {name} are replaced with
+  underscores.
+
+  Returns `%#{__MODULE__}{image: %Vix.Vips.Image{}}`.
+
+  ## Examples
+
+      #{__MODULE__}.render("user_name", Avatarex.Sets.Kitty, :kitty, "/renders/...")
+      %#{__MODULE__}{image: %Vix.Vips.Image{}, name: "user_name", set: :kitty...}
+
+  """
+  @spec write(avatar :: Avatarex.t_unrendered) :: Avatarex.t_rendered
+  def write(%__MODULE__{image: nil} = avatar) do
+    avatar |> render() |> write()
+  end
+
+  @spec write(avatar :: Avatarex.t_rendered) :: Avatarex.t_rendered
+  def write(%__MODULE__{image: image, set: set, name: name, renders_path: renders_path} = avatar) do
+    "#{name}"
+    |> String.replace(~r/[^a-zA-Z0-9-]/, "_")
+    |> then(&"#{&1}_#{set}.png")
+    |> then(&Path.join(renders_path, &1))
+    |> then(&Image.write!(image, &1))
+    |> then(&%{avatar | image: &1})
+    |> log(:write)
+  end
+
+  @spec log(Avatarex.t, action :: Avatarex.log_action) :: Avatarex.t
+  defp log(avatar, action) do
+    case action do
+      :generate -> "Generating a #{avatar.set} avatar"
+      :render -> "Rendering #{avatar.set} avatar named #{avatar.name}"
+      :write -> "Writing image '#{avatar.name}_#{avatar.set}.png' to renders path"
+    end
+    |> Logger.info()
+    avatar
   end
 end

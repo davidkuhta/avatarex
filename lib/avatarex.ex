@@ -181,11 +181,11 @@ defmodule Avatarex do
         path -> path
       end)
 
-      @sets_path (if File.exists?(@sets_path) do
-          @sets_path
-        else
-          @app |> :code.priv_dir |> Path.join(@sets_path)
-        end)
+      # @sets_path (if File.exists?(@sets_path) do
+      #     @sets_path
+      #   else
+      #     @app |> :code.priv_dir |> Path.join(@sets_path)
+      #   end)
 
       @doc """
       Returns a full path to the default directory for this avatar's sets.
@@ -298,7 +298,7 @@ defmodule Avatarex do
       index = rem(value, module.get_image_count(key))
       {key, module.get_image_path_by_index(key, index)}
     end)
-    |> construct(set, name, renders_path)
+    |> construct(module, set, name, renders_path)
   end
 
   @doc """
@@ -321,11 +321,26 @@ defmodule Avatarex do
       |> Enum.random()
       |> then(&[{key, &1} | acc])
     end)
-    |> construct(set, :rand.uniform(24), renders_path)
+    |> construct(module, set, :rand.uniform(24), renders_path)
   end
 
-  @spec construct(Avatarex.images, Avatarex.set, Avatarex.name, Avatarex.renders_path) :: Avatarex.t_unrendered
-  defp construct(images, set, name, renders_path) do
+  # prod_priv_path = :code.priv_dir(:avatarex)
+  # dir_path = Path.join(~w[sets body])
+  # prod_full_path = Path.join(prod_priv_path, dir_path)
+  # # in struct we store `dir_path`
+  # # for File.ls!/1 we use prod_full_path
+
+  # def construct(…) do
+  #   release_priv_path = :code.priv_dir(:avatarex)
+  #   images = Enum.map(images, fn {layer, path} -> {layer, Path.join(release_priv_dir, path)} end)
+  #   # …
+  # end
+
+  @spec construct(Avatarex.images, Avatarex.set_module, Avatarex.set, Avatarex.name, Avatarex.renders_path) :: Avatarex.t_unrendered
+  defp construct(images, module, set, name, renders_path) do
+    prod_full_path = :code.priv_dir(module.get_app())
+    IO.inspect(prod_full_path)
+    images = Enum.map(images, fn {layer, path} -> {layer, Path.join(prod_full_path, path)} end)
     %__MODULE__{images: images, set: set, name: name, renders_path: renders_path}
     |> log(:generate)
   end

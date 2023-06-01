@@ -75,10 +75,19 @@ defmodule Avatarex.Set do
 
       @behaviour Avatarex.Set
 
-      @sets_path (case opts[:avatar] do
-        nil -> :avatarex |> :code.priv_dir() |> Path.join("sets")
-        app -> app.sets_path()
+      @otp_app (case opts[:otp_app] do
+        nil -> :avatarex
+        app -> app
       end)
+      IO.inspect(@otp_app)
+
+      @sets_path (case opts[:avatar] do
+        # nil -> @otp_app |> :code.priv_dir() |> Path.join("sets")
+        nil -> "sets"
+        avatar -> avatar.sets_path()
+      end)
+      IO.inspect(@sets_path)
+
 
       @path (case opts[:path] do
         nil -> 
@@ -87,17 +96,24 @@ defmodule Avatarex.Set do
           |> String.split("/")
           |> List.last
           |> then(&Path.join(@sets_path, &1))
-        path -> if File.exists?(path) do
+        path -> if File.exists?(Path.join(@sets_path, path)) do
+            IO.inspect("path exists")
             path
           else
             Path.join(@sets_path, path)
           end
       end)
+      IO.inspect(@path)
+
+      build_path = @otp_app |> :code.priv_dir() |> Path.join(@path)
+      IO.inspect(build_path)
       
       @layers (case opts[:layer_order] do
-        nil -> File.ls!(@path) |> Enum.sort()
+        nil -> File.ls!(build_path) |> Enum.sort()
         layers -> layers
       end)
+
+      def get_app, do: @otp_app
 
       def get_layers, do: @layers
 
@@ -105,7 +121,8 @@ defmodule Avatarex.Set do
 
       for layer <- @layers,
         layer_path = Path.join(@path, layer),
-        images = File.ls!(layer_path) |> Enum.sort(),
+        # images = File.ls!(layer_path) |> Enum.sort(),
+        images = File.ls!(Path.join(build_path, layer)) |> Enum.sort(),
         count = Enum.count(images),
         images_paths = Enum.map(images, &Path.join(layer_path, &1)) do
 
@@ -114,6 +131,7 @@ defmodule Avatarex.Set do
 
           for {image, index} <- images |> Enum.with_index(),
               path = Path.join(layer_path, image) do
+                IO.inspect(path)
                 def get_image_path_by_index(unquote(layer), unquote(index)), do: unquote(path)
           end
       end

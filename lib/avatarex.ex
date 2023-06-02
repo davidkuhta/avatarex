@@ -55,9 +55,7 @@ defmodule Avatarex do
       @spec generate(Avatarex.set, Avatarex.set_module) :: Avatarex.t_unrendered
       for {set, module} <- @sets do
         def generate(name, unquote(set)) do
-          app = __MODULE__.get_app() |> :code.priv_dir()
-          renders_path = Path.join(app, @renders_path)
-          Avatarex.generate(name, unquote(module), unquote(set), renders_path)
+          Avatarex.generate(name, unquote(module), unquote(set), @renders_path)
         end
       end
 
@@ -209,7 +207,7 @@ defmodule Avatarex do
       def get_app(), do: @app
 
       @renders_path (case opts[:renders_path] do
-        nil -> "renders"
+        nil -> "priv/renders"
         path -> path
       end)
 

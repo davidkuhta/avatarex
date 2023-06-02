@@ -55,7 +55,9 @@ defmodule Avatarex do
       @spec generate(Avatarex.set, Avatarex.set_module) :: Avatarex.t_unrendered
       for {set, module} <- @sets do
         def generate(name, unquote(set)) do
-          Avatarex.generate(name, unquote(module), unquote(set), @renders_path)
+          app = __MODULE__.get_app() |> :code.priv_dir()
+          renders_path = Path.join(app, @renders_path)
+          Avatarex.generate(name, unquote(module), unquote(set), renders_path)
         end
       end
 
@@ -203,8 +205,8 @@ defmodule Avatarex do
       @spec sets_path() :: sets_path :: String.t
       def sets_path(), do: @sets_path
 
-      @spec app() :: app :: Atom.t
-      def app(), do: @app
+      @spec get_app() :: app :: Atom.t
+      def get_app(), do: @app
 
       @renders_path (case opts[:renders_path] do
         nil -> "renders"
@@ -342,12 +344,9 @@ defmodule Avatarex do
   @spec construct(Avatarex.images, Avatarex.set_module, Avatarex.set, Avatarex.name, Avatarex.renders_path) :: Avatarex.t_unrendered
   defp construct(images, module, set, name, renders_path) do
     prod_full_path = :code.priv_dir(module.get_app())
-    app = Mix.Project.get().project()[:app]
-    prod_renders_path = Path.join(:code.priv_dir(app), renders_path)
     IO.inspect(prod_full_path)
-    IO.inspect(prod_renders_path)
     images = Enum.map(images, fn {layer, path} -> {layer, Path.join(prod_full_path, path)} end)
-    %__MODULE__{images: images, set: set, name: name, renders_path: prod_renders_path}
+    %__MODULE__{images: images, set: set, name: name, renders_path: renders_path}
     |> log(:generate)
   end
 
